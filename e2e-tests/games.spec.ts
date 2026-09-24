@@ -65,6 +65,21 @@ test.describe('Game Listing and Navigation', () => {
     await expect(page.getByTestId('game-card').first()).toBeHidden();
   });
 
+  test('should sort games by title and rating', async ({ page }) => {
+    await page.goto('/');
+    const sortSelect = page.getByTestId('game-sort');
+    const firstVisibleTitle = page.locator('[data-search-card]:not([hidden]) [data-testid="game-title"]').first();
+
+    await sortSelect.selectOption('title-desc');
+    await expect(firstVisibleTitle).toHaveText('Virtual Server Simulator');
+
+    await sortSelect.selectOption('rating-desc');
+    const visibleRatings = await page
+      .locator('[data-search-card]:not([hidden]) [data-testid="game-card"]')
+      .evaluateAll((cards) => cards.map((card) => Number(card.getAttribute('data-game-rating'))));
+    expect(visibleRatings[0]).toBeGreaterThanOrEqual(visibleRatings[1]);
+  });
+
   test('should navigate to correct game details page when clicking on a game', async ({ page }) => {
     let gameId: string | null;
     let gameTitle: string | null;

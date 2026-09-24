@@ -31,6 +31,19 @@ const { games, initialVisibleCount = 6 } = Astro.props;
         class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
         data-testid="game-search-input"
     />
+    <label for="game-sort" class="mt-4 mb-2 block text-sm font-medium text-slate-200">Sort games</label>
+    <select
+        id="game-sort"
+        name="sort"
+        class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        data-testid="game-sort"
+        aria-describedby="game-sort-help"
+    >
+        <option value="title-asc">Title (A-Z)</option>
+        <option value="title-desc">Title (Z-A)</option>
+        <option value="rating-desc">Rating (highest first)</option>
+    </select>
+    <p id="game-sort-help" class="mt-2 text-sm text-slate-400">Unrated games appear after rated games when sorting by rating.</p>
 </form>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="games-grid" data-search-grid>
@@ -50,11 +63,12 @@ const { games, initialVisibleCount = 6 } = Astro.props;
 <script>
     const form = document.querySelector('[data-testid="game-search-form"]');
     const input = document.querySelector('[data-testid="game-search-input"]');
+    const sortSelect = document.querySelector('[data-testid="game-sort"]');
     const grid = document.querySelector('[data-search-grid]');
     const emptyState = document.querySelector('[data-testid="search-empty-state"]');
     const pagination = document.querySelector('[data-testid="pagination"]');
 
-    if (form instanceof HTMLFormElement && input instanceof HTMLInputElement && grid && emptyState) {
+    if (form instanceof HTMLFormElement && input instanceof HTMLInputElement && sortSelect instanceof HTMLSelectElement && grid && emptyState) {
         const cards = Array.from(grid.querySelectorAll('[data-search-card]'));
 
         const updateResults = () => {
@@ -73,7 +87,29 @@ const { games, initialVisibleCount = 6 } = Astro.props;
             pagination?.toggleAttribute('hidden', isSearching);
         };
 
+        const sortCards = () => {
+            const direction = sortSelect.value;
+            cards.sort((left, right) => {
+                const leftTitle = left.getAttribute('data-game-title') ?? '';
+                const rightTitle = right.getAttribute('data-game-title') ?? '';
+                if (direction === 'rating-desc') {
+                    const leftRating = Number(left.querySelector('[data-testid="game-card"]')?.getAttribute('data-game-rating'));
+                    const rightRating = Number(right.querySelector('[data-testid="game-card"]')?.getAttribute('data-game-rating'));
+                    const leftUnrated = Number.isNaN(leftRating);
+                    const rightUnrated = Number.isNaN(rightRating);
+                    if (leftUnrated !== rightUnrated) return leftUnrated ? 1 : -1;
+                    if (!leftUnrated && leftRating !== rightRating) return rightRating - leftRating;
+                }
+                const titleOrder = leftTitle.localeCompare(rightTitle);
+                return direction === 'title-desc' ? -titleOrder : titleOrder;
+            });
+            cards.forEach((card) => grid.append(card));
+            updateResults();
+        };
+
         input.addEventListener('input', updateResults);
         form.addEventListener('submit', updateResults);
+        sortSelect.addEventListener('change', sortCards);
+        updateResults();
     }
 </script>
