@@ -26,6 +26,17 @@ The app's data lives in a local SQLite database accessed through **Drizzle ORM**
 - Foreign keys use `.references(() => other.id)`.
 - Export inferred types (`typeof table.$inferSelect`) and build app-facing types from them — don't redeclare row shapes by hand.
 
+## Comments and TSDoc
+
+- Comments must explain intent, constraints, or a non-obvious database
+  decision. Do not restate what a query or schema declaration already says.
+- Every exported function in `db/` and `src/lib/` requires TSDoc/JSDoc with
+  the function's purpose, every parameter, and the return value. Document the
+  injectable `db` parameter explicitly so callers understand that pages use
+  the real client while tests use an in-memory client.
+- Keep comments current with the implementation. An outdated comment is a bug:
+  update or remove it in the same change as the related code.
+
 ## Migrations Workflow
 
 1. Edit `schema.ts`.

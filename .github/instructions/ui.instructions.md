@@ -20,6 +20,16 @@ Refer to technology-specific instruction files:
 
 ## Core Principles
 
+### Comments and Component Contracts
+
+- Comments should capture user-facing intent, accessibility reasoning, or
+  non-obvious implementation decisions — never paraphrase the markup or
+  utility classes below the comment.
+- Reusable components must document their `Props` interface so the component
+  contract is clear to both contributors and callers.
+- Remove or update stale comments whenever the associated interaction or
+  markup changes.
+
 ### Testability
 
 - Every interactive element MUST include a `data-testid` attribute
