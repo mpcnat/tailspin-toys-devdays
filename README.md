@@ -93,6 +93,16 @@ npm run typecheck:all    # both of the above
 
 This project ships Copilot customizations to assist with quality assurance:
 
+### Coding standards
+
+Repository-wide coding standards are maintained in
+[`.github/copilot-instructions.md`](.github/copilot-instructions.md), with
+technology-specific guidance in [`.github/instructions`](.github/instructions).
+In particular, exported data-layer functions require TSDoc/JSDoc for their
+purpose, parameters, and return values, reusable Astro components document
+their `Props` interfaces, and comments explain intent rather than restating
+code. Keep this documentation current when changing the related implementation.
+
 ### Database Explorer Canvas
 
 The shared **Database Explorer** canvas (`.github/extensions/database-explorer/`) provides a small UI and agent actions for browsing the project's SQLite tables and running one read-only `SELECT` or `WITH` query at a time. It uses the database at `.data/tailspin.db` (or `DATABASE_URL` when set), so run `npm run db:setup` before opening it in a fresh checkout.
