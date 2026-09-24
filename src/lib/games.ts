@@ -74,6 +74,34 @@ export interface GamesPage {
     totalPages: number;
 }
 
+export type GameSort = 'title-asc' | 'title-desc' | 'rating-desc';
+
+/**
+ * Sorts games by title or rating without mutating the input array.
+ *
+ * When sorting by rating, unrated games are placed after rated games because
+ * they cannot be ranked against a numeric score.
+ *
+ * @param games Games to sort.
+ * @param sort Sort order to apply.
+ * @returns A new array containing the games in the requested order.
+ */
+export function sortGames(games: Game[], sort: GameSort): Game[] {
+    return [...games].sort((left, right) => {
+        if (sort === 'rating-desc') {
+            if (left.starRating === null && right.starRating !== null) return 1;
+            if (left.starRating !== null && right.starRating === null) return -1;
+            if (left.starRating !== null && right.starRating !== null) {
+                const ratingDifference = right.starRating - left.starRating;
+                if (ratingDifference !== 0) return ratingDifference;
+            }
+        }
+
+        const titleOrder = left.title.localeCompare(right.title);
+        return sort === 'title-desc' ? -titleOrder : titleOrder;
+    });
+}
+
 /**
  * Filters games by a case-insensitive title substring.
  *

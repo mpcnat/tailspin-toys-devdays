@@ -8,6 +8,7 @@ import {
     getGameById,
     getGamesPage,
     filterGamesByTitle,
+    sortGames,
 } from './games';
 
 async function seedGames(db: Database, count: number): Promise<void> {
@@ -80,6 +81,19 @@ describe('games data-access helpers', () => {
 
         expect(filterGamesByTitle(all, 'gAmE 02').map((game) => game.title)).toEqual(['Game 02']);
         expect(filterGamesByTitle(all, 'missing')).toEqual([]);
+    });
+
+    it('sorts titles in both directions and keeps unrated games last by rating', async () => {
+        const all = [
+            { id: 1, title: 'Beta', description: '', starRating: null, category: null, publisher: null },
+            { id: 2, title: 'Alpha', description: '', starRating: 4.2, category: null, publisher: null },
+            { id: 3, title: 'Gamma', description: '', starRating: 4.8, category: null, publisher: null },
+        ];
+
+        expect(sortGames(all, 'title-asc').map((game) => game.title)).toEqual(['Alpha', 'Beta', 'Gamma']);
+        expect(sortGames(all, 'title-desc').map((game) => game.title)).toEqual(['Gamma', 'Beta', 'Alpha']);
+        expect(sortGames(all, 'rating-desc').map((game) => game.title)).toEqual(['Gamma', 'Alpha', 'Beta']);
+        expect(all.map((game) => game.title)).toEqual(['Beta', 'Alpha', 'Gamma']);
     });
 
     it('returns a page of games with pagination metadata', async () => {
