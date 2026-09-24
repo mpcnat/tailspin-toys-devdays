@@ -6,6 +6,8 @@ import {
     getAllGames,
     getAllGameIds,
     getGameById,
+    getGamesPage,
+    filterGamesByTitle,
 } from './games';
 
 async function seedGames(db: Database, count: number): Promise<void> {
@@ -50,6 +52,43 @@ describe('games data-access helpers', () => {
         const ids = await getAllGameIds(db);
         const all = await getAllGames(db);
         expect(ids).toEqual(all.map((g) => g.id));
+    });
+
+    it('filters games by title case-insensitively', async () => {
+        await seedGames(db, 3);
+        const all = await getAllGames(db);
+
+        expect(filterGamesByTitle(all, 'gAmE 02').map((game) => game.title)).toEqual(['Game 02']);
+        expect(filterGamesByTitle(all, 'missing')).toEqual([]);
+    });
+
+    it('returns a page of games with pagination metadata', async () => {
+        await seedGames(db, 5);
+
+        const result = await getGamesPage(db, 2, 2);
+
+        expect(result.totalGames).toBe(5);
+        expect(result.totalPages).toBe(3);
+        expect(result.page).toBe(2);
+        expect(result.games.map((game) => game.title)).toEqual(['Game 03', 'Game 04']);
+    });
+
+    it('returns an empty page after the final page', async () => {
+        await seedGames(db, 2);
+
+        const result = await getGamesPage(db, 3, 2);
+
+        expect(result.games).toEqual([]);
+        expect(result.totalPages).toBe(1);
+    });
+
+    it.each([
+        [0, 2],
+        [1, 0],
+    ])('rejects invalid pagination values (%s, %s)', async (page, pageSize) => {
+        await expect(getGamesPage(db, page, pageSize)).rejects.toThrow(
+            'must be a positive integer',
+        );
     });
 
     it('fetches a single game by id', async () => {

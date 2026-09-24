@@ -42,6 +42,8 @@ npm run build      # prebuild migrates + seeds, then builds the static site
 npm run preview
 ```
 
+The game catalog is statically paginated to six games per page. The home page is the first page, with additional pages generated under `/games/<page>`. The home page also provides case-insensitive title search across the catalog.
+
 ## Database
 
 The SQLite database is built from `db/games.csv` — there is no live data to migrate.

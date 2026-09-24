@@ -24,6 +24,47 @@ test.describe('Game Listing and Navigation', () => {
     });
   });
 
+  test('should paginate the game list', async ({ page }) => {
+    await test.step('Verify the first page shows pagination controls', async () => {
+      await page.goto('/');
+      await expect(page.getByTestId('pagination')).toBeVisible();
+      await expect(page.getByTestId('pagination-status')).toHaveText('Page 1 of 4');
+      await expect(page.getByTestId('pagination-next')).toBeVisible();
+    });
+
+    await test.step('Navigate to the next page', async () => {
+      await page.getByTestId('pagination-next').click();
+      await expect(page).toHaveURL('/games/2');
+      await expect(page.getByTestId('pagination-status')).toHaveText('Page 2 of 4');
+    });
+
+    await test.step('Verify the next page has a different game set', async () => {
+      await expect(page.getByTestId('game-title').first()).not.toHaveText('Bug Buster Brainteaser');
+      await expect(page.getByTestId('pagination-previous')).toHaveAttribute('href', '/');
+    });
+  });
+
+  test('should filter games by title as the user types', async ({ page }) => {
+    await page.goto('/');
+    const searchInput = page.getByTestId('game-search-input');
+
+    await searchInput.fill('Pipeline');
+
+    const visibleCards = page.locator('[data-search-card]:not([hidden])').getByTestId('game-card');
+    await expect(visibleCards).toHaveCount(1);
+    await expect(visibleCards.getByTestId('game-title')).toHaveText('Pipeline Conquest');
+    await expect(page.getByTestId('pagination')).toBeHidden();
+  });
+
+  test('should show an empty state when no title matches', async ({ page }) => {
+    await page.goto('/');
+
+    await page.getByTestId('game-search-input').fill('not a real game');
+
+    await expect(page.getByTestId('search-empty-state')).toBeVisible();
+    await expect(page.getByTestId('game-card').first()).toBeHidden();
+  });
+
   test('should navigate to correct game details page when clicking on a game', async ({ page }) => {
     let gameId: string | null;
     let gameTitle: string | null;
