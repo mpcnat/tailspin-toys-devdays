@@ -1,7 +1,13 @@
-import { asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import type { Database } from './db';
 import { games, categories, publishers } from '../../db/schema';
 import type { Game } from '../types/game';
+
+/** Filter values accepted by the game listing helpers. */
+export type GameFilterOptions = {
+    categoryIds?: Array<number | string>;
+    publisherIds?: Array<number | string>;
+};
 
 const gameSelection = {
     id: games.id,
@@ -24,6 +30,16 @@ type GameSelectionRow = {
     publisherId: number | null;
     publisherName: string | null;
 };
+
+function normalizeFilterIds(values: Array<number | string> | undefined): number[] {
+    if (!values) {
+        return [];
+    }
+
+    return values
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0);
+}
 
 function mapGame(row: GameSelectionRow): Game {
     return {
@@ -77,8 +93,24 @@ export function filterGamesByTitle(games: Game[], query: string): Game[] {
  * @param db Injectable Drizzle database client used to query games and their relations.
  * @returns Every game in deterministic title order.
  */
-export async function getAllGames(db: Database): Promise<Game[]> {
-    const rows = await baseGamesQuery(db).orderBy(asc(games.title));
+export async function getAllGames(
+    db: Database,
+    filters: GameFilterOptions = {},
+): Promise<Game[]> {
+    const categoryIds = normalizeFilterIds(filters.categoryIds);
+    const publisherIds = normalizeFilterIds(filters.publisherIds);
+    const clauses = [];
+
+    if (categoryIds.length > 0) clauses.push(inArray(games.categoryId, categoryIds));
+    if (publisherIds.length > 0) clauses.push(inArray(games.publisherId, publisherIds));
+
+    const query = baseGamesQuery(db);
+    const filterableQuery = query as typeof query & {
+        where: (condition: ReturnType<typeof and>) => typeof query;
+    };
+    const filteredQuery =
+        clauses.length > 0 ? filterableQuery.where(and(...clauses)) : query;
+    const rows = await filteredQuery.orderBy(asc(games.title));
     return rows.map(mapGame);
 }
 
@@ -116,6 +148,34 @@ export async function getGamesPage(
         totalGames,
         totalPages,
     };
+}
+
+/**
+ * Returns categories ordered alphabetically by name.
+ *
+ * @param db Injectable Drizzle database client used to query categories.
+ * @returns Category ids and names in deterministic order.
+ */
+export async function getAllCategories(db: Database): Promise<Array<{ id: number; name: string }>> {
+    const rows = await db
+        .select({ id: categories.id, name: categories.name })
+        .from(categories)
+        .orderBy(asc(categories.name));
+    return rows;
+}
+
+/**
+ * Returns publishers ordered alphabetically by name.
+ *
+ * @param db Injectable Drizzle database client used to query publishers.
+ * @returns Publisher ids and names in deterministic order.
+ */
+export async function getAllPublishers(db: Database): Promise<Array<{ id: number; name: string }>> {
+    const rows = await db
+        .select({ id: publishers.id, name: publishers.name })
+        .from(publishers)
+        .orderBy(asc(publishers.name));
+    return rows;
 }
 
 /**
