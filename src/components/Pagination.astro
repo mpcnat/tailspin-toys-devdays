@@ -1,0 +1,49 @@
+---
+/**
+ * Props for the accessible game list pagination controls.
+ */
+interface Props {
+    /** Current one-based page number. */
+    page: number;
+    /** Number of generated pages. */
+    totalPages: number;
+    /** URL for the first page, which is the home page. */
+    firstPageUrl?: string;
+}
+
+const { page, totalPages, firstPageUrl = '/' } = Astro.props;
+const pageUrl = (pageNumber: number): string =>
+    pageNumber === 1 ? firstPageUrl : `/games/${pageNumber}`;
+---
+
+{totalPages > 1 && (
+    <nav aria-label="Game list pagination" class="mt-8 flex items-center justify-center gap-3" data-testid="pagination">
+        {page > 1 ? (
+            <a
+                href={pageUrl(page - 1)}
+                class="inline-flex rounded-lg px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                data-testid="pagination-previous"
+            >
+                Previous
+            </a>
+        ) : (
+            <span class="px-4 py-2 text-sm text-slate-500" aria-disabled="true">Previous</span>
+        )}
+
+        <span class="text-sm text-slate-300" aria-current="page" data-testid="pagination-status">
+            Page {page} of {totalPages}
+        </span>
+
+        {page < totalPages ? (
+            <a
+                href={pageUrl(page + 1)}
+                class="inline-flex rounded-lg px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                data-testid="pagination-next"
+            >
+                Next
+            </a>
+        ) : (
+            <span class="px-4 py-2 text-sm text-slate-500" aria-disabled="true">Next</span>
+        )}
+    </nav>
+)}

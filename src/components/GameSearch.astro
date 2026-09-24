@@ -1,0 +1,79 @@
+---
+import type { Game } from '../types/game';
+import GameCard from './GameCard.astro';
+
+/**
+ * Props for the client-enhanced title search and game grid.
+ */
+interface Props {
+    /** Complete title-ordered catalog used for client-side filtering. */
+    games: Game[];
+    /** Number of cards visible before a search is entered. */
+    initialVisibleCount?: number;
+}
+
+const { games, initialVisibleCount = 6 } = Astro.props;
+---
+
+<form
+    role="search"
+    class="mb-8"
+    data-testid="game-search-form"
+    onsubmit="return false"
+>
+    <label for="game-search" class="mb-2 block text-sm font-medium text-slate-200">Search games by title</label>
+    <input
+        id="game-search"
+        name="q"
+        type="search"
+        placeholder="Search by title"
+        autocomplete="off"
+        class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        data-testid="game-search-input"
+    />
+</form>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="games-grid" data-search-grid>
+    {games.map((game, index) => (
+        <div data-search-card data-game-title={game.title} hidden={index >= initialVisibleCount}>
+            <GameCard game={game} />
+        </div>
+    ))}
+</div>
+
+<div hidden data-testid="search-empty-state">
+    <div class="text-center py-12 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700">
+        <p data-testid="search-empty-state-text" class="text-slate-300">No games match that title.</p>
+    </div>
+</div>
+
+<script>
+    const form = document.querySelector('[data-testid="game-search-form"]');
+    const input = document.querySelector('[data-testid="game-search-input"]');
+    const grid = document.querySelector('[data-search-grid]');
+    const emptyState = document.querySelector('[data-testid="search-empty-state"]');
+    const pagination = document.querySelector('[data-testid="pagination"]');
+
+    if (form instanceof HTMLFormElement && input instanceof HTMLInputElement && grid && emptyState) {
+        const cards = Array.from(grid.querySelectorAll('[data-search-card]'));
+
+        const updateResults = () => {
+            const query = input.value.trim().toLocaleLowerCase();
+            const isSearching = query.length > 0;
+            let matches = 0;
+
+            cards.forEach((card, index) => {
+                const title = card.getAttribute('data-game-title')?.toLocaleLowerCase() ?? '';
+                const matchesQuery = isSearching ? title.includes(query) : index < 6;
+                card.toggleAttribute('hidden', !matchesQuery);
+                if (matchesQuery) matches += 1;
+            });
+
+            emptyState.toggleAttribute('hidden', isSearching && matches === 0 ? false : true);
+            pagination?.toggleAttribute('hidden', isSearching);
+        };
+
+        input.addEventListener('input', updateResults);
+        form.addEventListener('submit', updateResults);
+    }
+</script>

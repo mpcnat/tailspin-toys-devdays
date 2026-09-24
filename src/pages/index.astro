@@ -1,16 +1,19 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import GameCard from '../components/GameCard.astro';
+import GameSearch from '../components/GameSearch.astro';
 import PageHero from '../components/PageHero.astro';
+import Pagination from '../components/Pagination.astro';
 import { getDatabase } from '../lib/db';
-import { getAllCategories, getAllGames, getAllPublishers } from '../lib/games';
+import { getAllCategories, getAllGames, getAllPublishers, getGamesPage } from '../lib/games';
 
 export const prerender = true;
 
-const [games, categories, publishers] = await Promise.all([
-    getAllGames(getDatabase()),
-    getAllCategories(getDatabase()),
-    getAllPublishers(getDatabase()),
+const db = getDatabase();
+const allGames = await getAllGames(db);
+const gamesPage = await getGamesPage(db, 1, 6);
+const [categories, publishers] = await Promise.all([
+    getAllCategories(db),
+    getAllPublishers(db),
 ]);
 ---
 
@@ -79,10 +82,8 @@ const [games, categories, publishers] = await Promise.all([
     <div>
       <h2 class="text-2xl font-medium mb-6 text-slate-100">Featured Games</h2>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="games-grid">
-        {games.map((game) => <GameCard game={game} />)}
-      </div>
-
+      <GameSearch games={allGames} />
+      <Pagination page={gamesPage.page} totalPages={gamesPage.totalPages} />
       <div
         data-testid="empty-state"
         hidden
@@ -144,6 +145,10 @@ const [games, categories, publishers] = await Promise.all([
       const shouldShow = matchesCategory && matchesPublisher;
 
       card.hidden = !shouldShow;
+      const searchCard = card.closest('[data-search-card]') as HTMLElement | null;
+      if (searchCard) {
+        searchCard.hidden = !shouldShow;
+      }
       if (shouldShow) {
         visibleCount += 1;
       }
